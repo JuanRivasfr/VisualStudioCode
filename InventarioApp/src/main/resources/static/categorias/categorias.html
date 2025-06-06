@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Categorías</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    .acciones button { margin-right: 5px; }
+  </style>
+</head>
+<body class="p-4">
+<button onclick="volverAlMenu()" class="btn btn-secondary mb-3">← Volver al Menú</button>
+  <h2>Categorías</h2>
+
+  <div class="mb-4">
+    <form id="formCategoria" class="row g-3">
+      <div class="col-md-5">
+        <input type="text" class="form-control" id="nombre" placeholder="Nombre" required>
+      </div>
+      <div class="col-md-5">
+        <input type="text" class="form-control" id="descripcion" placeholder="Descripción" required>
+      </div>
+      <div class="col-md-2">
+        <button type="submit" class="btn btn-primary w-100">Registrar</button>
+      </div>
+    </form>
+  </div>
+
+  <table class="table table-bordered table-striped">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Nombre</th>
+        <th>Descripción</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody id="tablaCategorias"></tbody>
+  </table>
+
+  <script>
+    const api = 'http://localhost:8080/api/categorias';
+    const token = localStorage.getItem("jwt");
+
+    function obtenerRolDesdeToken() {
+      if (!token) return null;
+      const payloadBase64 = token.split('.')[1];
+      const decoded = JSON.parse(atob(payloadBase64));
+      return decoded.rol;
+    }
+
+    const rol = obtenerRolDesdeToken();
+
+    async function cargarCategorias() {
+      const res = await fetch(api, {
+        headers: {
+          'Authorization': 'Bearer ' + token
+        }
+      });
+
+      if (!res.ok) {
+        console.error("Error al cargar categorías:", res.status);
+        return;
+      }
+
+      const data = await res.json();
+
+      const tbody = document.getElementById("tablaCategorias");
+      tbody.innerHTML = '';
+      data.forEach(cat => {
+        const fila = document.createElement("tr");
+        fila.innerHTML = `
+          <td>${cat.id}</td>
+          <td>${cat.nombre}</td>
+          <td>${cat.descripcion}</td>
+          <td class="acciones">
+            ${rol === 'ADMINISTRADOR' ? `<button class='btn btn-sm btn-warning' onclick="window.location.href='editar.html?id=${cat.id}'">Editar</button>` : ''}
+            ${rol === 'ADMINISTRADOR' ? `<button class='btn btn-sm btn-danger' onclick='eliminar(${cat.id})'>Eliminar</button>` : ''}
+          </td>
+        `;
+        tbody.appendChild(fila);
+      });
+    }
+
+    document.getElementById("formCategoria").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const nombre = document.getElementById("nombre").value;
+      const descripcion = document.getElementById("descripcion").value;
+
+      await fetch(api, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + token
+        },
+        body: JSON.stringify({ nombre, descripcion })
+      });
+
+      e.target.reset();
+      cargarCategorias();
+    });
+
+    async function eliminar(id) {
+      if (!confirm("¿Deseas eliminar esta categoría?")) return;
+      await fetch(`${api}/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+      cargarCategorias();
+    }
+
+    function editar(id) {
+      alert("Función editar pendiente de implementación para ID " + id);
+    }
+
+    cargarCategorias();
+  </script>
+  <script>
+  function volverAlMenu() {
+    const token = localStorage.getItem("jwt");
+    if (!token) return window.location.href = "login.html";
+
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    const rol = payload.rol;
+
+    if (rol === 'ADMINISTRADOR') {
+      window.location.href = "/menu_admin.html";
+    } else {
+      window.location.href = "/menu.html";
+    }
+  }
+</script>
+ 
+</body>
+</html>

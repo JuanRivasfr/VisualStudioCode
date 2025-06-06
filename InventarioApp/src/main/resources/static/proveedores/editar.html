@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Editar Proveedor</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="p-4">
+  <div class="container">
+    <button onclick="volverAlMenu()" class="btn btn-secondary mb-3">← Volver al Menú</button>
+    <h2>Editar Proveedor</h2>
+
+    <form id="formEditar" class="mt-4">
+      <div class="mb-3">
+        <label for="nombre" class="form-label">Nombre</label>
+        <input type="text" class="form-control" id="nombre" required>
+      </div>
+      <div class="mb-3">
+        <label for="contacto" class="form-label">Contacto</label>
+        <input type="text" class="form-control" id="contacto" required>
+      </div>
+      <div class="mb-3">
+        <label for="telefono" class="form-label">Teléfono</label>
+        <input type="text" class="form-control" id="telefono" required>
+      </div>
+      <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+      <a href="proveedores.html" class="btn btn-secondary ms-2">Cancelar</a>
+    </form>
+  </div>
+
+  <script>
+    const token = localStorage.getItem("jwt");
+    const urlParams = new URLSearchParams(window.location.search);
+    const id = urlParams.get("id");
+
+    function obtenerRolDesdeToken() {
+      if (!token) return null;
+      const payloadBase64 = token.split('.')[1];
+      const decoded = JSON.parse(atob(payloadBase64));
+      return decoded.rol;
+    }
+
+    const rol = obtenerRolDesdeToken();
+    if (rol !== 'ADMINISTRADOR') {
+      alert("Acceso denegado. Solo el ADMINISTRADOR puede editar proveedores.");
+      window.location.href = "proveedores.html";
+    }
+
+    async function cargarProveedor() {
+      const res = await fetch(`http://localhost:8080/api/proveedores/${id}`, {
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+      if (!res.ok) {
+        alert("Error al cargar proveedor");
+        return;
+      }
+      const data = await res.json();
+      document.getElementById("nombre").value = data.nombre;
+      document.getElementById("contacto").value = data.contacto;
+      document.getElementById("telefono").value = data.telefono;
+    }
+
+    document.getElementById("formEditar").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const nombre = document.getElementById("nombre").value;
+      const contacto = document.getElementById("contacto").value;
+      const telefono = document.getElementById("telefono").value;
+
+      const res = await fetch(`http://localhost:8080/api/proveedores/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + token
+        },
+        body: JSON.stringify({ id: parseInt(id), nombre, contacto, telefono })
+      });
+
+      if (res.ok) {
+        alert("Proveedor actualizado correctamente");
+        window.location.href = "proveedores.html";
+      } else {
+        alert("Error al actualizar proveedor");
+      }
+    });
+
+    cargarProveedor();
+  </script>
+  <script>
+  function volverAlMenu() {
+    const token = localStorage.getItem("jwt");
+    if (!token) return window.location.href = "login.html";
+
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    const rol = payload.rol;
+
+    if (rol === 'ADMINISTRADOR') {
+      window.location.href = "/menu_admin.html";
+    } else {
+      window.location.href = "/menu.html";
+    }
+  }
+</script>
+  
+</body>
+</html>

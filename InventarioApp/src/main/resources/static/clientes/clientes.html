@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Clientes</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="p-4">
+<button onclick="volverAlMenu()" class="btn btn-secondary mb-3">← Volver al Menú</button>
+<h2>Clientes</h2>
+
+<form id="formCliente" class="row g-3 mb-4">
+  <div class="col-md-3">
+    <input type="text" class="form-control" id="nombre" placeholder="Nombre" required>
+  </div>
+  <div class="col-md-3">
+    <input type="email" class="form-control" id="correo" placeholder="Correo" required>
+  </div>
+  <div class="col-md-3">
+    <input type="text" class="form-control" id="telefono" placeholder="Teléfono" required>
+  </div>
+  <div class="col-md-3">
+    <select class="form-select" id="tipoDocumento" required>
+      <option value="">Tipo de Documento</option>
+      <option value="CC">CC</option>
+      <option value="TI">TI</option>
+      <option value="CE">CE</option>
+      <option value="NIT">NIT</option>
+    </select>
+  </div>
+  <div class="col-md-4">
+    <input type="text" class="form-control" id="numeroDocumento" placeholder="Número de Documento" maxlength="20" required>
+  </div>
+  <div class="col-md-12">
+    <button type="submit" class="btn btn-primary">Registrar Cliente</button>
+  </div>
+</form>
+
+<table class="table table-bordered">
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>Nombre</th>
+      <th>Correo</th>
+      <th>Teléfono</th>
+      <th>Tipo Doc</th>
+      <th>Número Doc</th>
+      <th>Acciones</th>
+    </tr>
+  </thead>
+  <tbody id="tablaClientes"></tbody>
+</table>
+
+<script>
+const api = 'http://localhost:8080/api/clientes';
+const token = localStorage.getItem("jwt");
+
+function obtenerRolDesdeToken() {
+  if (!token) return null;
+  const payloadBase64 = token.split('.')[1];
+  const decoded = JSON.parse(atob(payloadBase64));
+  return decoded.rol;
+}
+
+const rol = obtenerRolDesdeToken();
+
+async function cargarClientes() {
+  const res = await fetch(api, {
+    headers: { 'Authorization': 'Bearer ' + token }
+  });
+
+  if (!res.ok) return alert("Error al cargar clientes");
+
+  const data = await res.json();
+  const tbody = document.getElementById("tablaClientes");
+  tbody.innerHTML = '';
+  data.forEach(cli => {
+    const fila = document.createElement("tr");
+    fila.innerHTML = `
+      <td>${cli.id}</td>
+      <td>${cli.nombre}</td>
+      <td>${cli.correo}</td>
+      <td>${cli.telefono}</td>
+      <td>${cli.tipoDocumento}</td>
+      <td>${cli.numeroDocumento}</td>
+      <td>
+        ${rol === 'ADMINISTRADOR' ? `<button class='btn btn-sm btn-warning' onclick="editar(${cli.id})">Editar</button>` : ''}
+        ${rol === 'ADMINISTRADOR' ? `<button class='btn btn-sm btn-danger' onclick="eliminar(${cli.id})">Eliminar</button>` : ''}
+      </td>
+    `;
+    tbody.appendChild(fila);
+  });
+}
+
+async function eliminar(id) {
+  if (!confirm("¿Eliminar cliente?")) return;
+  await fetch(`${api}/${id}`, {
+    method: 'DELETE',
+    headers: { 'Authorization': 'Bearer ' + token }
+  });
+  cargarClientes();
+}
+
+function editar(id) {
+  window.location.href = `editar.html?id=${id}`;
+}
+
+const form = document.getElementById("formCliente");
+form.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const cliente = {
+    nombre: form.nombre.value,
+    correo: form.correo.value,
+    telefono: form.telefono.value,
+    tipoDocumento: form.tipoDocumento.value,
+    numeroDocumento: form.numeroDocumento.value
+  };
+
+  await fetch(api, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + token
+    },
+    body: JSON.stringify(cliente)
+  });
+
+  form.reset();
+  cargarClientes();
+});
+
+cargarClientes();
+</script>
+<script>
+  function volverAlMenu() {
+    const token = localStorage.getItem("jwt");
+    if (!token) return window.location.href = "login.html";
+
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    const rol = payload.rol;
+
+    if (rol === 'ADMINISTRADOR') {
+      window.location.href = "/menu_admin.html";
+    } else {
+      window.location.href = "/menu.html";
+    }
+  }
+</script>
+</body>
+</html>

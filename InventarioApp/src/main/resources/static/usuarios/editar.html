@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Editar Usuario</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="p-4">
+  <div class="container">
+    <a href="/menu.html" class="btn btn-secondary mb-3">← Volver al Menú</a>
+    <h2>Editar Usuario</h2>
+
+    <form id="formEditar" class="mt-4">
+      <div class="mb-3">
+        <label for="username" class="form-label">Usuario</label>
+        <input type="text" class="form-control" id="username" required>
+      </div>
+      <div class="mb-3 position-relative">
+        <label for="password" class="form-label">Contraseña</label>
+        <input type="password" class="form-control" id="password" required>
+        <button type="button" class="btn btn-sm btn-outline-secondary position-absolute top-50 end-0 translate-middle-y me-2" onclick="togglePassword()" tabindex="-1">👁️</button>
+      </div>
+      <div class="mb-3">
+        <label for="rol" class="form-label">Rol</label>
+        <select class="form-select" id="rol" required>
+          <option value="">Seleccione Rol</option>
+          <option value="ADMINISTRADOR">ADMINISTRADOR</option>
+          <option value="OPERADOR">OPERADOR</option>
+        </select>
+      </div>
+      <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+      <a href="usuarios.html" class="btn btn-secondary ms-2">Cancelar</a>
+    </form>
+  </div>
+
+  <script>
+    const token = localStorage.getItem("jwt");
+    const urlParams = new URLSearchParams(window.location.search);
+    const id = urlParams.get("id");
+
+    function obtenerRolDesdeToken() {
+      if (!token) return null;
+      const payloadBase64 = token.split('.')[1];
+      const decoded = JSON.parse(atob(payloadBase64));
+      return decoded.rol;
+    }
+
+    const rol = obtenerRolDesdeToken();
+    if (rol !== 'ADMINISTRADOR') {
+      alert("Acceso denegado. Solo el ADMINISTRADOR puede editar usuarios.");
+      window.location.href = "usuarios.html";
+    }
+
+    async function cargarUsuario() {
+      const res = await fetch(`http://localhost:8080/api/usuarios/${id}`, {
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+      if (!res.ok) {
+        alert("Error al cargar usuario");
+        return;
+      }
+      const data = await res.json();
+      document.getElementById("username").value = data.username;
+      document.getElementById("rol").value = data.rol;
+    }
+
+    document.getElementById("formEditar").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const usuario = {
+        id: parseInt(id),
+        username: document.getElementById("username").value,
+        password: document.getElementById("password").value,
+        rol: document.getElementById("rol").value
+      };
+
+      const res = await fetch(`http://localhost:8080/api/usuarios/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + token
+        },
+        body: JSON.stringify(usuario)
+      });
+
+      if (res.ok) {
+        alert("Usuario actualizado correctamente");
+        window.location.href = "usuarios.html";
+      } else {
+        alert("Error al actualizar usuario");
+      }
+    });
+
+    function togglePassword() {
+      const input = document.getElementById("password");
+      input.type = input.type === "password" ? "text" : "password";
+    }
+
+    cargarUsuario();
+  </script>
+</body>
+</html>
