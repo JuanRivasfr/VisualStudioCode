@@ -38,7 +38,6 @@ Sistema web para la gestión de inventario de un comercio, desarrollado con **Ja
 - React
 - JavaScript (ES6+)
 - Tailwind CSS
-- Axios
 
 ---
 
