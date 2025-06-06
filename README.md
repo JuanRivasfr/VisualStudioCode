@@ -32,9 +32,7 @@ Sistema web para la gestión de inventario de un comercio, desarrollado con **Ja
 - Java 17+
 - Spring Boot
 - Maven
-- Spring Security (si aplica)
-- JPA / Hibernate
-- Base de datos (MySQL, PostgreSQL, etc.)
+- Base de datos (MySQL)
 
 ### Frontend (`front-inventario`)
 - React
